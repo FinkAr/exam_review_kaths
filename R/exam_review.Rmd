@@ -21,10 +21,9 @@ knitr::opts_chunk$set(
 if (!"pacman" %in% installed.packages()) { install.packages("pacman") }
 pacman::p_load(
   knitr, rmarkdown, embedr,
-  tidyverse, gt, gtExtras,
+  tidyverse, kableExtra,
   here, glue, mirt
 )
-
 source(here("R/functions.R"))
 ```
 
@@ -40,7 +39,6 @@ title: "Klausureinsicht: `r title`"
 **Hashcode:** `r Hash`\
 **Testlänge:** `r length(pers_results$items_answered)` Items\
 **Datum:** `r format(Sys.Date(), '%d.%m.%Y')`
-
 
 ```{r, echo=FALSE}
 # creating table with all relevant information
@@ -66,25 +64,8 @@ table_review <- tibble(
 
 ```
 
-
-
 ```{r, results="asis"}
-
-options(kableExtra.auto_format = FALSE)
-library(kableExtra)
-format_table <- function(.data) {
-  kableExtra::kbl(
-    x = .data, 
-    format = "html", 
-    escape = FALSE,
-    col.names = c("","")
-    ) %>%
-    kableExtra::kable_styling(
-      full_width = TRUE,
-      position = "center"
-    ) 
-}
-
+#options(kableExtra.auto_format = FALSE)
 table_review %>% 
   mutate(across(everything(),
          ~replace_mediafile(.x))) %>% 
@@ -99,9 +80,4 @@ table_review %>%
   mutate(tables_html = map(.x = data_long, ~htmltools::tagList(htmltools::HTML(format_table(.x))))) %>% 
   chuck("tables_html") %>% 
   walk(~normal_print(.x))
-
-
-
-
 ```
-

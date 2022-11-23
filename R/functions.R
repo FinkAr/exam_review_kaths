@@ -1,42 +1,3 @@
-# function which checks for html img tag and replaces it with actual image filename
-check_replace_imagefile <- function(x) {
-  str_replace_all(
-    x,
-    "<img src=[\"'](.+?)[\"'].*?>",
-    here("data/Shiny/\\1")
-  )
-}
-# plotting of tables with images
-get_image_table <- function(list_tables, rows) {
-  list_tables %>%
-    gt::gt() %>%
-    cols_width(value ~ px(600)) %>%
-    tab_style(
-      style = cell_borders(
-        sides = "all",
-        color = "grey95",
-        weight = px(1),
-        style = "solid"
-      ),
-      locations = cells_body(
-        columns = everything(),
-        rows = everything()
-      )
-    ) %>%
-    gt::tab_options(
-      column_labels.hidden = TRUE,
-      table.width = px(800),
-      table.align = "center"
-    ) %>%
-    gt::text_transform(
-      locations = gt::cells_body(columns = value, rows = rows),
-      fn = function(x) {
-        purrr::map_chr(
-          x, ~ gt::local_image(filename = .x, height = gt::pct(100))
-        )
-      }
-    )
-}
 # convert wide format of item into long format as well as filter missing values
 convert_to_long <- function(x) {
   x %>%
@@ -56,13 +17,6 @@ convert_to_long <- function(x) {
     select(key, value) %>%
     # Drop rows where value is "NA"
     filter(!str_detect(value, "NA"))
-}
-# function that extract indices of rows where images should be located in the tables
-get_image_indices <- function(x) {
-  x %>%
-    pull(value) %>%
-    str_detect(., pattern = "(data/Shiny/www/)") %>%
-    which()
 }
 
 # function for rendering the exam review script:
@@ -86,8 +40,6 @@ render_review <- function(filename_of_data) {
   )
 }
 
-#
-
 replace_mediafile <- function(file) {
   replace_mediafile_ <- function(file, media_src = c("img", "audio", "video")) {
     rlang::arg_match(media_src)
@@ -101,7 +53,6 @@ replace_mediafile <- function(file) {
     replace_mediafile_(., media_src = "audio") %>% 
     replace_mediafile_(., media_src = "video")
 }
-
 
 html_tag_audio <- function(file) {
   file_ext_rgx <- stringr::regex("[\\/a-zA-Z0-9äöüÄÖÜ_-]*?\\.mp3|ogg|wav")
@@ -135,6 +86,14 @@ html_tag_img <- function(file) {
 }
 
 format_table <- function(.data) {
-  gt::gt(.data) %>% 
-    fmt_markdown(columns = everything())
+  kableExtra::kbl(
+    x = .data, 
+    format = "html", 
+    escape = FALSE,
+    col.names = c("","")
+  ) %>%
+    kableExtra::kable_styling(
+      full_width = TRUE,
+      position = "center"
+    ) 
 }
