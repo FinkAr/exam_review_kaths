@@ -1,0 +1,107 @@
+---
+author: ""
+fontsize: "12pt"
+output:
+  html_document:
+    theme:
+      bootswatch: cosmo
+params:
+  data: "0001_15-43-23_2019-12-12_WS.RData"
+---
+
+```{r setup, include=FALSE}
+# global knitting options
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE
+)
+
+# load required packages
+if (!"pacman" %in% installed.packages()) { install.packages("pacman") }
+pacman::p_load(
+  knitr, rmarkdown, embedr,
+  tidyverse, gt, gtExtras,
+  here, glue, mirt
+)
+
+source(here("R/functions.R"))
+```
+
+```{r load data, echo=FALSE, warning=FALSE}
+load(here("data/results", params$data), verbose = FALSE)
+```
+
+---
+title: "Klausureinsicht: `r title`"
+---
+
+**Login-Name:** `r pers_results$login_name`\
+**Hashcode:** `r Hash`\
+**Testlänge:** `r length(pers_results$items_answered)` Items\
+**Datum:** `r format(Sys.Date(), '%d.%m.%Y')`
+
+
+```{r, echo=FALSE}
+# creating table with all relevant information
+table_review <- tibble(
+  id = df$ID,
+  body = df$Question,
+  answer_options_01 = df$Options.Options.1,
+  answer_options_02 = df$Options.Options.2,
+  answer_options_03 = df$Options.Options.3,
+  answer_options_04 = df$Options.Options.4,
+  correct_answer = df$Answer,
+  chosen_answer = pers_results$raw_responses,
+  scored_answer = factor(pers_results$scored_responses,
+    levels = c(0, 1),
+    labels = c("Falsch", "Richtig")
+  ),
+  answer_time = glue("{round(pers_results$item_time, 2)} Sekunden")
+) %>%
+ # include only items that were answered by the participant
+ slice(pers_results$items_answered) %>%
+ replace(is.na(.), "NA") %>%
+ mutate(scored_answer = as.character(scored_answer))
+
+```
+
+
+
+```{r, results="asis"}
+
+options(kableExtra.auto_format = FALSE)
+library(kableExtra)
+format_table <- function(.data) {
+  kableExtra::kbl(
+    x = .data, 
+    format = "html", 
+    escape = FALSE,
+    col.names = c("","")
+    ) %>%
+    kableExtra::kable_styling(
+      full_width = TRUE,
+      position = "center"
+    ) 
+}
+
+table_review %>% 
+  mutate(across(everything(),
+         ~replace_mediafile(.x))) %>% 
+  mutate(across(
+    .cols = everything(),
+    .fns  = ~html_tag_img(.x) %>% html_tag_audio() %>% html_tag_video()
+  )) %>% 
+  group_by(row_number = row_number()) %>%
+  group_nest() %>% 
+  rename(data_wide = data) %>% 
+  mutate(data_long = map(.x = data_wide, .f = ~convert_to_long(.x))) %>% 
+  mutate(tables_html = map(.x = data_long, ~htmltools::tagList(htmltools::HTML(format_table(.x))))) %>% 
+  chuck("tables_html") %>% 
+  walk(~normal_print(.x))
+
+
+
+
+```
+
