@@ -1,26 +1,14 @@
 # convert wide format of item into long format as well as filter missing values
 convert_to_long <- function(x) {
   x %>%
-    gather(data = x) %>%
-    mutate(key = c(
-      "Item",
-      "Stimulus",
-      "Antwortoption 1",
-      "Antwortoption 2",
-      "Antwortoption 3",
-      "Antwortoption 4",
-      "Korrekte Antwort",
-      "Gewählte Antwort",
-      "Korrektheit?",
-      "Antwortzeit (in Sekunden)"
-    )) %>%
-    select(key, value) %>%
+    rename_with(
+      .data = .,
+      .fn = ~gsub("_", " ", .x, fixed = TRUE),
+    ) %>% 
+    pivot_longer(cols = everything()) %>% 
     # Drop rows where value is "NA"
     filter(!str_detect(value, "NA"))
 }
-
-
-# dynamisch Erstellen mit case_when
 
 replace_mediafile <- function(file) {
   replace_mediafile_ <- function(file, media_src = c("img", "audio", "video")) {
@@ -103,5 +91,3 @@ render_review <- function(filename_of_data) {
     output_file = glue::glue('{here::here("R/")}{participant_id_date}exam_review.html')
   )
 }
-
-

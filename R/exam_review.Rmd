@@ -17,8 +17,6 @@ knitr::opts_chunk$set(
   message = FALSE,
   error = TRUE
 )
-
-
 # load required packages
 if (!"pacman" %in% installed.packages()) { install.packages("pacman") }
 pacman::p_load(
@@ -28,7 +26,6 @@ pacman::p_load(
 )
 source(here("R/functions.R"))
 ```
-
 ```{r load data, echo=FALSE, warning=FALSE, include=TRUE, eval=TRUE}
 load(here("data/results", params$data), verbose = FALSE)
 
@@ -45,33 +42,37 @@ title: "Klausureinsicht: `r title`"
 
 ```{r, echo=FALSE}
 # creating table with all relevant information
-# auch hier dynamisch starts_with(Options.Options.)
-# dynamisch variablen namen erstellen
-
-table_review <- tibble(
-  id = df$ID,
-  body = df$Question,
-  answer_options_01 = df$Options.Options.1,
-  answer_options_02 = df$Options.Options.2,
-  answer_options_03 = df$Options.Options.3,
-  answer_options_04 = df$Options.Options.4,
-  correct_answer = df$Answer,
-  chosen_answer = pers_results$raw_responses,
-  scored_answer = factor(pers_results$scored_responses,
+table_initial <- tibble(df) %>% 
+  select(
+    Item = ID, Stimulus = Question,
+    starts_with("Options.Options"),
+    Korrekte_Antwort = Answer) %>% 
+  mutate(Gewählte_Antwort = pers_results$raw_responses) %>% 
+  mutate(Korrektheit = factor(
+    pers_results$scored_responses,
     levels = c(0, 1),
     labels = c("Falsch", "Richtig")
-  ),
-  answer_time = glue("{round(pers_results$item_time, 2)} Sekunden")
-) %>%
+  )) %>% 
+  mutate(Antwortzeit = glue("{round(pers_results$item_time, 2)} Sekunden")) 
+
+vec_num_answeropt <- table_initial %>% 
+  select(starts_with("Options.Options")) %>% 
+  ncol() %>% 
+  seq_len()
+
+table_review <- table_initial %>% 
+  rename_with(
+    .data = .,
+    .fn = ~glue("Antwortoption_{vec_num_answeropt}"),
+    .cols = starts_with("Options.Options")
+  ) %>% 
  # include only items that were answered by the participant
  slice(pers_results$items_answered) %>%
  replace(is.na(.), "NA") %>%
- mutate(scored_answer = as.character(scored_answer))
-
+ mutate(Korrektheit = as.character(Korrektheit))
+  
 ```
-
 ```{r, results="asis"}
-#options(kableExtra.auto_format = FALSE)
 table_review %>% 
   mutate(across(everything(),
          ~replace_mediafile(.x))) %>% 
@@ -82,7 +83,7 @@ table_review %>%
   group_by(row_number = row_number()) %>%
   group_nest() %>% 
   rename(data_wide = data) %>% 
-  mutate(data_long = map(.x = data_wide, .f = ~convert_to_long(.x))) %>% 
+  mutate(data_long = map(.x = data_wide, .f = ~convert_to_long(.x))) %>%
   mutate(tables_html = map(.x = data_long, ~htmltools::tagList(htmltools::HTML(format_table(.x))))) %>% 
   chuck("tables_html") %>% 
   walk(~normal_print(.x))
