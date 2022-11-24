@@ -19,26 +19,8 @@ convert_to_long <- function(x) {
     filter(!str_detect(value, "NA"))
 }
 
-# function for rendering the exam review script:
-render_review <- function(filename_of_data) {
-  # extract participant id and date for file naming:
-  participant_id_date <- filename_of_data %>% 
-    basename() %>% 
-    str_remove_all("WS.RData")
 
-  # render rmd:
-  rmarkdown::render(
-    here::here("R/exam_review.Rmd"),
-    params = list(data = filename_of_data),
-    output_format = "html_document",
-  #  envir = new.env(),     
-    output_file = paste0(
-      here::here("R/"),
-      participant_id_date,
-      "exam_review.html"
-      )
-  )
-}
+# dynamisch Erstellen mit case_when
 
 replace_mediafile <- function(file) {
   replace_mediafile_ <- function(file, media_src = c("img", "audio", "video")) {
@@ -72,7 +54,7 @@ html_tag_video <- function(file) {
   stringr::str_replace_all(
     string = file,
     pattern = video_validation_rgx,
-    replacement = glue::glue('<video controls>  <source src="\\1" type="video/{file_extension}"/></video>')
+    replacement = glue::glue('<video width="600px" controls> <source src="\\1" type="video/{file_extension}"/></video>')
   )
 }
 
@@ -93,7 +75,33 @@ format_table <- function(.data) {
     col.names = c("","")
   ) %>%
     kableExtra::kable_styling(
-      full_width = TRUE,
+      full_width = FALSE,
       position = "center"
+    )  %>% 
+    kableExtra::column_spec(
+      column = 1,
+      width = "8cm"
+    ) %>% 
+    kableExtra::column_spec(
+      column = 2,
+      width = "16cm"
     ) 
 }
+
+# function to render the exam review script:
+render_review <- function(filename_of_data) {
+  # extract participant id and date for file naming:
+  participant_id_date <- filename_of_data %>% 
+    basename() %>% 
+    str_remove_all("WS.RData")
+  
+  rmarkdown::render(
+    input = here::here("R/exam_review.Rmd"),
+    params = list(data = filename_of_data),
+    output_format = "html_document",
+    output_dir = here("out"),
+    output_file = glue::glue('{here::here("R/")}{participant_id_date}exam_review.html')
+  )
+}
+
+
