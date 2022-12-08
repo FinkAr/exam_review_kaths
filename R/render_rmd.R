@@ -2,7 +2,9 @@
 if (!"pacman" %in% installed.packages()) { install.packages("pacman") }
 pacman::p_load(
   knitr, rmarkdown, 
-  tidyverse, here, fs 
+  tidyverse, here, fs,
+  embedr, kableExtra,
+  glue, mirt
 )
 
 source(here("R/functions.R"))
@@ -19,3 +21,6 @@ datafiles_participants <- dir_map(
 walk(datafiles_participants, render_review)
 
 # render_review(datafiles_participants[1])
+library("psycModel")
+
+html_to_pdf(dir = "out", render_exist = T)

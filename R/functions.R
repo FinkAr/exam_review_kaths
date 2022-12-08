@@ -16,7 +16,7 @@ replace_mediafile <- function(file) {
     stringr::str_replace_all(
       string = file,
       pattern = glue::glue("<{media_src} src=[\"'](.+?)[\"'].*?>"),
-      replacement = here::here("data/Shiny/\\1")
+      replacement = here::here("data/Shiny/\\1") ###TODO: make this more flexible
     )
   }
   replace_mediafile_(file, media_src = "img") %>% 
@@ -88,6 +88,6 @@ render_review <- function(filename_of_data) {
     params = list(data = filename_of_data),
     output_format = "html_document",
     output_dir = here("out"),
-    output_file = glue::glue('{here::here("R/")}{participant_id_date}exam_review.html')
+    output_file = glue::glue('{participant_id_date}exam_review.html')
   )
 }
